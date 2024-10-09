@@ -455,7 +455,8 @@
     
     Выходными данными является программа для преобразования цвета с помощью различных цветовых моделей:
     
-    ![image.png](image.png)
+    ![image](https://github.com/user-attachments/assets/b8010d6c-6276-413b-b8e3-465bddae3be0)
+
     
 5. Вывод
     
