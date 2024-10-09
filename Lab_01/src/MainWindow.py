@@ -42,7 +42,6 @@ class MainWindow(QWidget):
         self.CMYK_layout.addLayout(self.yellow_slider)
         self.CMYK_layout.addLayout(self.key_slider)
 
-
         # Слайдеры для HSV
         self.HSV_layout = QVBoxLayout()
         self.hue_slider = self.CreateSliderLayout(Colors.HUE, 359)
@@ -61,7 +60,6 @@ class MainWindow(QWidget):
         self.layout.addLayout(self.CMYK_layout)
         self.layout.addLayout(self.HSV_layout)
 
-
         self.setLayout(self.layout)
 
     def CreateSliderLayout(self, color_name, upper_bound):
@@ -73,7 +71,6 @@ class MainWindow(QWidget):
 
         if color_name == Colors.RED or color_name == Colors.GREEN or color_name == Colors.BLUE:
             slider.valueChanged.connect(self.EditedRGB)
-            #val = QIntValidator(0,255, line_edit)
             rx = QtCore.QRegExp("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)?$")
             val = QRegExpValidator(rx)
             line_edit.setValidator(val)
@@ -106,11 +103,8 @@ class MainWindow(QWidget):
         return h_layout
 
     def CreateOutputFieldAndSelectButton(self):
-        # Label для отображения цвета
         self.output_layout = QHBoxLayout()
-
         self.color_display.setMinimumSize(200, 100)
-
         self.EditedRGB()
 
         change_color_button = QPushButton("Select color")
@@ -163,7 +157,6 @@ class MainWindow(QWidget):
             yellow = int(yellowText) if yellowText != "" else 0
             keyText = self.key_slider.itemAt(1).widget().text()
             key = int(keyText) if keyText != "" else 0
-            col = QColor.fromCmykF(cyan/99, magenta/99, yellow/99, key/99)
 
             self.cyan_slider.itemAt(2).widget().setValue(cyan)
             self.magenta_slider.itemAt(2).widget().setValue(magenta)
@@ -174,7 +167,6 @@ class MainWindow(QWidget):
             magenta = self.magenta_slider.itemAt(2).widget().value()
             yellow = self.yellow_slider.itemAt(2).widget().value()
             key = self.key_slider.itemAt(2).widget().value()
-            col = QColor.fromCmykF(cyan/99, magenta/99, yellow/99, key/99)
             self.cyan_slider.itemAt(1).widget().setText(str(cyan))
             self.magenta_slider.itemAt(1).widget().setText(str(magenta))
             self.yellow_slider.itemAt(1).widget().setText(str(yellow))
@@ -183,9 +175,10 @@ class MainWindow(QWidget):
         self.DisconnectHSV()
         self.DisconnectRGB()
 
+        r, g, b = self.CMYKtoRGB(cyan, magenta, yellow, key)
+        col = QColor(r, g, b)
         self.UpdateHSV(col)
         self.UpdateRGB(col)
-        col = col.toRgb()
         self.color_display.setStyleSheet(f"background-color: rgb({col.red()}, {col.green()}, {col.blue()});")
 
         self.ConnectHSV()
@@ -199,7 +192,6 @@ class MainWindow(QWidget):
             saturation = int(saturationText) if saturationText != "" else 0
             valueText = self.value_slider.itemAt(1).widget().text()
             value = int(valueText) if valueText != "" else 0
-            col = QColor.fromHsvF(hue / 359, saturation / 99, value / 99)
 
             self.hue_slider.itemAt(2).widget().setValue(hue)
             self.saturation_slider.itemAt(2).widget().setValue(saturation)
@@ -208,7 +200,6 @@ class MainWindow(QWidget):
             hue = self.hue_slider.itemAt(2).widget().value()
             saturation = self.saturation_slider.itemAt(2).widget().value()
             value = self.value_slider.itemAt(2).widget().value()
-            col = QColor.fromHsvF(hue / 359, saturation / 99, value / 99)
             self.hue_slider.itemAt(1).widget().setText(str(hue))
             self.saturation_slider.itemAt(1).widget().setText(str(saturation))
             self.value_slider.itemAt(1).widget().setText(str(value))
@@ -216,9 +207,10 @@ class MainWindow(QWidget):
         self.DisconnectSMYK()
         self.DisconnectRGB()
 
+        r, g, b = self.HSVtoRGB(hue, saturation, value)
+        col = QColor(r, g, b)
         self.UpdateCMYK(col)
         self.UpdateRGB(col)
-        col = col.toRgb()
         self.color_display.setStyleSheet(f"background-color: rgb({col.red()}, {col.green()}, {col.blue()});")
 
         self.ConnectSMYK()
@@ -242,36 +234,36 @@ class MainWindow(QWidget):
 
 
     def UpdateCMYK(self, col):
-        color = col.toCmyk()
-        self.cyan_slider.itemAt(2).widget().setValue(round(color.cyanF() * 99))
-        self.magenta_slider.itemAt(2).widget().setValue(round(color.magentaF() * 99))
-        self.yellow_slider.itemAt(2).widget().setValue(round(color.yellowF() * 99))
-        self.key_slider.itemAt(2).widget().setValue(round(color.blackF() * 99))
+        c, m, y, k = self.RGBtoCMYK(col)
+        self.cyan_slider.itemAt(2).widget().setValue(c)
+        self.magenta_slider.itemAt(2).widget().setValue(m)
+        self.yellow_slider.itemAt(2).widget().setValue(y)
+        self.key_slider.itemAt(2).widget().setValue(k)
 
-        self.cyan_slider.itemAt(1).widget().setText(str(round(color.cyanF() * 99)))
-        self.magenta_slider.itemAt(1).widget().setText(str(round(color.magentaF() * 99)))
-        self.yellow_slider.itemAt(1).widget().setText(str(round(color.yellowF() * 99)))
-        self.key_slider.itemAt(1).widget().setText(str(round(color.blackF() * 99)))
+        self.cyan_slider.itemAt(1).widget().setText(str(c))
+        self.magenta_slider.itemAt(1).widget().setText(str(m))
+        self.yellow_slider.itemAt(1).widget().setText(str(y))
+        self.key_slider.itemAt(1).widget().setText(str(k))
 
     def UpdateHSV(self, col):
-        color = col.toHsv()
-        self.hue_slider.itemAt(2).widget().setValue(round(max(color.hueF() * 359, 0)))
-        self.saturation_slider.itemAt(2).widget().setValue(round(color.saturationF() * 99))
-        self.value_slider.itemAt(2).widget().setValue(round(color.valueF() * 99))
+        h, s, v = self.RGBtoHSV(col)
+        self.hue_slider.itemAt(2).widget().setValue(h)
+        self.saturation_slider.itemAt(2).widget().setValue(s)
+        self.value_slider.itemAt(2).widget().setValue(v)
 
-        self.hue_slider.itemAt(1).widget().setText(str(round(max(color.hueF() * 359, 0))))
-        self.saturation_slider.itemAt(1).widget().setText(str(round(color.saturationF() * 99)))
-        self.value_slider.itemAt(1).widget().setText(str(round(color.valueF() * 99)))
+        self.hue_slider.itemAt(1).widget().setText(str(h))
+        self.saturation_slider.itemAt(1).widget().setText(str(s))
+        self.value_slider.itemAt(1).widget().setText(str(v))
 
     def UpdateRGB(self, col):
-        color = col.toRgb()
-        self.red_slider.itemAt(2).widget().setValue(round(color.redF() * 255))
-        self.green_slider.itemAt(2).widget().setValue(round(color.greenF() * 255))
-        self.blue_slider.itemAt(2).widget().setValue(round(color.blueF() * 255))
+        r, g,b = col.red(), col.green(), col.blue()
+        self.red_slider.itemAt(2).widget().setValue(r)
+        self.green_slider.itemAt(2).widget().setValue(g)
+        self.blue_slider.itemAt(2).widget().setValue(b)
 
-        self.red_slider.itemAt(1).widget().setText(str(round(color.redF() * 255)))
-        self.green_slider.itemAt(1).widget().setText(str(round(color.greenF() * 255)))
-        self.blue_slider.itemAt(1).widget().setText(str(round(color.blueF() * 255)))
+        self.red_slider.itemAt(1).widget().setText(str(r))
+        self.green_slider.itemAt(1).widget().setText(str(g))
+        self.blue_slider.itemAt(1).widget().setText(str(b))
 
     def DisconnectSMYK(self):
         self.cyan_slider.itemAt(2).widget().valueChanged.disconnect(self.EditedCMYK)
@@ -324,3 +316,72 @@ class MainWindow(QWidget):
         self.green_slider.itemAt(1).widget().textChanged.connect(self.EditedRGB)
         self.blue_slider.itemAt(2).widget().valueChanged.connect(self.EditedRGB)
         self.blue_slider.itemAt(1).widget().textChanged.connect(self.EditedRGB)
+
+
+    def CMYKtoRGB(self, c, m, y, k):
+        r = 255 * (1 - c / 99) * (1 - k / 99)
+        g = 255 * (1 - m / 99) * (1 - k / 99)
+        b = 255 * (1 - y / 99) * (1 - k / 99)
+        return round(r), round(g), round(b)
+
+    def HSVtoRGB(self, h, s, v):
+        print(h, s, v)
+        V = v / 99
+        S = s / 99
+        C = V * S
+        X = C * (1 - abs((h / 60) % 2 - 1))
+        m = V - C
+        r,g,b = 0,0,0
+        if h < 60:
+            r,g,b = C,X,0
+        elif h < 120:
+            r,g,b = X, C, 0
+        elif h < 180:
+            r, g,b = 0,C,X
+        elif h < 240:
+            r,g,b = 0,X,C
+        elif h < 300:
+            r,g,b = X,0,C
+        elif h < 360:
+            r,g,b = C,0,X
+        r,g,b = (r + m) * 255, (g + m) * 255, (b +m) * 255
+        print(r, g, b)
+        return round(r), round(g), round(b)
+
+    def RGBtoCMYK(self, col):
+        r = col.red() / 255
+        g = col.green() / 255
+        b = col.blue() / 255
+        if r == 0 and b == 0 and b == 0:
+            return 0,0,0,100
+
+        k = 1 - max(r, g, b)
+        c = round((1 - r - k) / (1 - k) * 99)
+        m = round((1 - g - k) / (1 - k) * 99)
+        y = round((1 - b - k) / (1 - k) * 99)
+        return c, m, y, round(k * 99)
+
+    def RGBtoHSV(self, col):
+        r = col.red() / 255
+        g = col.green() / 255
+        b = col.blue() / 255
+        cMax = max(r, g, b)
+        cMin = min(r, g, b)
+        delta = cMax - cMin
+
+        if delta == 0:
+            h = 0
+        elif (cMax - r) < 0.0001:
+            h = 60 * (((g - b) / delta) % 6)
+        elif (cMax - g) < 0.0001:
+            h = 60 * (((b - r) / delta) + 2)
+        else:
+            h = 60 * (((r - g) / delta) + 4)
+
+        if cMax == 0:
+            s = 0
+        else:
+            s = delta / cMax
+
+        v = cMax
+        return round(h), round(s * 99), round(v * 99)
