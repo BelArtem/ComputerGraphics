@@ -5,6 +5,7 @@ from PyQt5.QtGui import QKeySequence, QRegExpValidator, QFont, QIntValidator
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
+import numpy as np
 
 
 class MainWindow(QWidget):
@@ -145,10 +146,12 @@ class MainWindow(QWidget):
 
 
     def load_image(self):
-        fname, _ = QFileDialog.getOpenFileName(self, 'Open File', '../dataset/raw', 'Image files (*.jpg *.png)')
+        fname, _ = QFileDialog.getOpenFileName(self, 'Open File', '', 'Image files (*.jpg *.png)')
         if fname:
             self.applied_filters_stack.clear()
             self.cur_image = cv2.imread(fname)
+            if np.all(self.cur_image[:, :, 0] == self.cur_image[:, :, 1]) and np.all(self.cur_image[:, :, 1] == self.cur_image[:, :, 2]):
+                self.cur_image = cv2.cvtColor(self.cur_image, cv2.COLOR_BGR2GRAY)
             self.initial_image = self.cur_image
             self.display_image(self.cur_image)
 
@@ -161,6 +164,7 @@ class MainWindow(QWidget):
             bytes_per_line = 3 * width
             q_img = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
         self.pixmap = QPixmap.fromImage(q_img)
+        # self.pixmap = QPixmap.convertFromImage(q_img, Qt.MonoOnly)
         self.label.setPixmap(self.pixmap.scaled(self.label.size(), Qt.KeepAspectRatio))
 
     def apply_grayscale(self):
