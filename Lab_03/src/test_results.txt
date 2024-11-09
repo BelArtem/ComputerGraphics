@@ -1,0 +1,4 @@
+Step by step algorithm 0.9751920700073242 s
+Bresenham line algorithm 0.008615255355834961 s
+DDA line algorithm 0.009574174880981445 s
+Circle algorithm 0.01269388198852539 s

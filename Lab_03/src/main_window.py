@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QPushButton, QGraphicsScene, QGraphicsView, \
     QGraphicsTextItem, QLineEdit, QLabel, QHBoxLayout
 
-from PyQt5.QtGui import QPen, QColor, QFont, QIntValidator
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPen, QColor, QFont, QRegExpValidator
+from PyQt5.QtCore import Qt, QRegExp
 
 import time
+import random
 
 
 class MainWindow(QWidget):
@@ -25,9 +26,12 @@ class MainWindow(QWidget):
         self.setWindowTitle('Raster Algorithms')
         self.setGeometry(100, 100, 800, 600)
 
-        x_val = QIntValidator(-20, 20)
-        y_val = QIntValidator(-20, 20)
-        r_val = QIntValidator(0, 15)
+        x_rx = QRegExp("^(-?([1][0-9]|20)|-?([0-9]))$")
+        x_val = QRegExpValidator(x_rx, self)
+        y_rx = QRegExp("^(-?([1][0-5]|15)|-?([0-9]|[1][0-5]))$")
+        y_val = QRegExpValidator(y_rx, self)
+        r_rx = QRegExp("^(0|[1-9]|1[0-5])$")
+        r_val = QRegExpValidator(r_rx, self)
 
         self.start_x_input = QLineEdit(self)
         self.start_y_input = QLineEdit(self)
@@ -59,6 +63,12 @@ class MainWindow(QWidget):
         btn_step_by_step = QPushButton('Step by step', self)
         btn_step_by_step.clicked.connect(self.draw_step_by_step)
 
+        btn_test = QPushButton('Test', self)
+        btn_test.clicked.connect(self.test_all_algorithms)
+
+        btn_clear = QPushButton('Clear', self)
+        btn_clear.clicked.connect(self.clear_grid)
+
         v1_layout = QVBoxLayout()
         v2_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
@@ -79,46 +89,49 @@ class MainWindow(QWidget):
         self.layout.addWidget(btn_dda)
         self.layout.addWidget(btn_bresenham_circle)
         self.layout.addWidget(btn_step_by_step)
+        test_clear_layout = QHBoxLayout()
+        test_clear_layout.addWidget(btn_clear)
+        test_clear_layout.addWidget(btn_test)
+        self.layout.addLayout(test_clear_layout)
 
     def draw_grid(self):
         pen = QPen(QColor(200, 200, 200))
 
         self.scene.clear()
 
-        for i in range(-400, 401, self.CELL_SIZE):
-            self.scene.addLine(i, -300, i, 300, pen)
-        for j in range(-300, 301, self.CELL_SIZE):
-            self.scene.addLine(-400, j, 400, j, pen)
+        for i in range(-420, 421, self.CELL_SIZE):
+            self.scene.addLine(i, -320, i, 320, pen)
+        for j in range(-320, 321, self.CELL_SIZE):
+            self.scene.addLine(-420, j, 420, j, pen)
 
-        self.scene.addLine(0, -300, 0, 300, QPen(QColor(0, 0, 0), 2))  # Ось Y
-        self.scene.addLine(-400, 0, 400, 0, QPen(QColor(0, 0, 0), 2))  # Ось X
+        self.scene.addLine(0, -320, 0, 320, QPen(QColor(0, 0, 0), 2))  # Ось Y
+        self.scene.addLine(-420, 0, 420, 0, QPen(QColor(0, 0, 0), 2))  # Ось X
 
         font = QFont()
         font.setPointSize(10)
 
         x_label = QGraphicsTextItem("X")
         x_label.setFont(font)
-        x_label.setPos(380, 10)
+        x_label.setPos(400, 10)
         self.scene.addItem(x_label)
 
         y_label = QGraphicsTextItem("Y")
         y_label.setFont(font)
-        y_label.setPos(10, -290)
+        y_label.setPos(10, -310)
         self.scene.addItem(y_label)
 
         font.setPointSize(4)
-        for i in range(-400, 401, self.CELL_SIZE):
+        for i in range(-420, 421, self.CELL_SIZE):
             x_scale_label = QGraphicsTextItem(str(i // self.CELL_SIZE))
             x_scale_label.setFont(font)
             x_scale_label.setPos(i-10, 0)
             self.scene.addItem(x_scale_label)
 
-        for i in range(-300, 301, self.CELL_SIZE):
+        for i in range(-320, 321, self.CELL_SIZE):
             y_scale_label = QGraphicsTextItem(str(-(i // self.CELL_SIZE)))
             y_scale_label.setFont(font)
             y_scale_label.setPos(-20, i-10)
             self.scene.addItem(y_scale_label)
-
 
     def draw_bresenham_line(self):
         x0 = int(self.start_x_input.text() if self.start_x_input.text() != "" else 0)
@@ -129,11 +142,10 @@ class MainWindow(QWidget):
         y0 = -y0
         y1 = -y1
 
-        self.scene.clear()
-        self.draw_grid()
+        self.clear_grid()
+        self.bresenham_line_algorithm(x0, y0, x1, y1)
 
-        start = time.time_ns()
-
+    def bresenham_line_algorithm(self, x0, y0, x1, y1):
         if y1 - y0 < 0:
             y1 -= 1
             y0 -= 1
@@ -168,9 +180,6 @@ class MainWindow(QWidget):
                     err += dy
                 y0 += sy
 
-        end = time.time_ns()
-        #print("bresenham line time:", (end-start)/1000, "mcs")
-
     def draw_dda_line(self):
         x0 = int(self.start_x_input.text() if self.start_x_input.text() != "" else 0)
         y0 = int(self.start_y_input.text() if self.start_y_input.text() != "" else 0)
@@ -187,11 +196,10 @@ class MainWindow(QWidget):
             x1 -= 1
             x0 -= 1
 
-        self.scene.clear()
-        self.draw_grid()
+        self.clear_grid()
+        self.dda_line_algorithm(x0, y0, x1, y1)
 
-        start = time.time_ns()
-
+    def dda_line_algorithm(self, x0, y0, x1, y1):
         dx = x1 - x0
         dy = y1 - y0
         steps = max(abs(dx), abs(dy))
@@ -207,19 +215,16 @@ class MainWindow(QWidget):
                                QPen(Qt.red), brush=QColor(255, 0, 0))
             x += x_inc
             y += y_inc
-        end = time.time_ns()
-        #print("dda line time:", (end - start)/1000, "mcs")
 
     def draw_bresenham_circle(self):
-        x_center = int(self.start_x_input.text() if self.start_x_input.text() != "" else 0)  # Центр круга в ячейках
+        x_center = int(self.start_x_input.text() if self.start_x_input.text() != "" else 0)
         y_center = -int(self.start_y_input.text() if self.start_y_input.text() != "" else 0)
-        radius = int(self.radius_input.text() if self.radius_input.text() != "" else 0)  # Радиус в ячейках
+        radius = int(self.radius_input.text() if self.radius_input.text() != "" else 0)
 
-        self.scene.clear()
-        self.draw_grid()
+        self.clear_grid()
+        self.bresenham_circle_algorithm(x_center, y_center, radius)
 
-        start = time.time_ns()
-
+    def bresenham_circle_algorithm(self, x_center, y_center, radius):
         x = radius
         y = 0
         p = 1 - radius
@@ -247,9 +252,6 @@ class MainWindow(QWidget):
                 x -= 1
                 p = p + (2 * y) - (2 * x) + 1
 
-        end = time.time_ns()
-        #print("bresenham circle time:", (end - start)/1000, "mcs")
-
     def draw_step_by_step(self):
         x0 = int(self.start_x_input.text() if self.start_x_input.text() != "" else 0)
         y0 = -int(self.start_y_input.text() if self.start_y_input.text() != "" else 0)
@@ -263,11 +265,10 @@ class MainWindow(QWidget):
             x1 -= 1
             x0 -= 1
 
-        self.scene.clear()
-        self.draw_grid()
+        self.clear_grid()
+        self.step_by_step_algorithm(x0, y0, x1, y1)
 
-        start = time.time_ns()
-
+    def step_by_step_algorithm(self, x0, y0, x1, y1):
         step = 0.01
         A = y0 - y1
         B = x1 - x0
@@ -279,8 +280,6 @@ class MainWindow(QWidget):
                 self.scene.addRect(x0 * self.CELL_SIZE, y0 * self.CELL_SIZE,
                                    self.CELL_SIZE, self.CELL_SIZE,
                                    QPen(QColor(255, 0, 255)), brush=QColor(255, 0, 255))
-                end = time.time_ns()
-                #print("step by step time:", (end - start) / 1000, "mcs")
                 return
             y = min(y0, y1)
             while y < max(y0, y1):
@@ -288,8 +287,6 @@ class MainWindow(QWidget):
                                    self.CELL_SIZE, self.CELL_SIZE,
                                    QPen(QColor(255, 0, 255)), brush=QColor(255, 0, 255))
                 y += step
-            end = time.time_ns()
-            #print("step by step time:", (end - start) / 1000, "mcs")
             return
         x = min(x0, x1)
         while x < max(x0, x1):
@@ -299,8 +296,75 @@ class MainWindow(QWidget):
                                QPen(QColor(255, 0, 255)), brush=QColor(255, 0, 255))
 
             x += step
-        end = time.time_ns()
-        #print("step by step time:", (end - start) / 1000, "mcs")
+
+    def test_all_algorithms(self):
+        f = open('test_results.txt', 'w')
+        points = []
+        for i in range(200):
+            x0, x1 = random.randint(-20, 20), random.randint(-20, 20)
+            y0, y1 = random.randint(-15, 15), random.randint(-15, 15)
+            points.append((x0, y0, x1, y1))
+
+        self.clear_grid()
+
+        step_by_step_time = self.test_step_by_step(points)
+        f.write("Step by step algorithm " + str(step_by_step_time) + ' s\n')
+
+        self.clear_grid()
+
+        bresenham_line_time = self.test_bresenham(points)
+        f.write("Bresenham line algorithm " + str(bresenham_line_time) + ' s\n')
+
+        self.clear_grid()
+
+        dda_line_time = self.test_dda(points)
+        f.write("DDA line algorithm " + str(dda_line_time) + ' s\n')
+
+        self.clear_grid()
+
+        points = []
+        for i in range(200):
+            x, y = random.randint(-20, 20), random.randint(-15, 15)
+            r = random.randint(0, min(20 - abs(x), 15 - abs(y)))
+            points.append((x, y, r))
+
+        circle_time = self.test_circle(points)
+        f.write("Circle algorithm " + str(circle_time) + ' s\n')
+
+        self.clear_grid()
+
+    def test_step_by_step(self, points):
+        start = time.time()
+        for point in points:
+            self.step_by_step_algorithm(point[0], point[1], point[2], point[3])
+        end = time.time()
+        return end - start
+
+    def test_bresenham(self, points):
+        start = time.time()
+        for point in points:
+            self.bresenham_line_algorithm(point[0], point[1], point[2], point[3])
+        end = time.time()
+        return end - start
+
+    def test_dda(self, points):
+        start = time.time()
+        for point in points:
+            self.dda_line_algorithm(point[0], point[1], point[2], point[3])
+        end = time.time()
+        return end - start
+
+    def test_circle(self, points):
+        start = time.time()
+        for point in points:
+            self.bresenham_circle_algorithm(point[0], point[1], point[2])
+        end = time.time()
+        return end - start
+
+    def clear_grid(self):
+        self.scene.clear()
+        self.draw_grid()
+
 
 class ZoomableGraphicsView(QGraphicsView):
     def __init__(self, scene):
